@@ -10,18 +10,18 @@ CHANNEL_ID = "UCJHA_jMfCvEnv-3kRjTCQXw"
 
 def main():
     video_entries = []
-    bits_remain = 10000
+    units_remain = 10000
     # get videos
-    bits_remain, video_entries = get_videos(bits_remain, video_entries)
+    units_remain, video_entries = get_videos(units_remain, video_entries)
 
     # get indv details
-    bits_remain, video_entries = get_details(bits_remain, video_entries)
+    units_remain, video_entries = get_details(units_remain, video_entries)
 
     # save to csv
     save_csv(video_entries)
 
 
-def get_videos(bits_remain, video_entries):
+def get_videos(units_remain, video_entries):
     # setup env variables
     PAGE_ID = ""
     LAST_PAGE = False
@@ -30,10 +30,10 @@ def get_videos(bits_remain, video_entries):
 
     # run while last page is false
     while(LAST_PAGE is False):
-        # check remaining bits
-        if bits_remain < 300:
-            input("Remaining bits less than 300. \n Press Enter to continue when quota refreshes.")
-            bits_remain = 10000
+        # check remaining units
+        if units_remain < 300:
+            input("Remaining units less than 300. \n Press Enter to continue when quota refreshes.")
+            units_remain = 10000
 
         # setup url
         URL = (f'https://www.googleapis.com/youtube/v3/search?key={API_KEY}&channelId={CHANNEL_ID}&pageToken={PAGE_ID}&part=snippet,id&order=date&maxResults={num_results}&type=video')
@@ -41,7 +41,7 @@ def get_videos(bits_remain, video_entries):
         # get page results
         page = requests.get(URL)
         results = json.loads(page.text)
-        bits_remain -= 100
+        units_remain -= 100
 
         # save videos into list
         for video in results['items']:
@@ -63,12 +63,12 @@ def get_videos(bits_remain, video_entries):
             # set last page to true
             LAST_PAGE = True
             print(f"All search results processed. {len(video_entries)} videos found.")
-            print(f"Bits remaining: {bits_remain}")
+            print(f"Units remaining: {units_remain}")
 
-    return bits_remain, video_entries
+    return units_remain, video_entries
 
 
-def get_details(bits_remain, video_entries):
+def get_details(units_remain, video_entries):
     video_count = 0
     total_videos = len(video_entries)
 
@@ -81,7 +81,7 @@ def get_details(bits_remain, video_entries):
         # get page results
         page = requests.get(URL)
         results = json.loads(page.text)
-        bits_remain -= 1
+        units_remain -= 1
 
         details = results['items'][0]
 
@@ -92,24 +92,24 @@ def get_details(bits_remain, video_entries):
         video["likecount"] = details['statistics']['likeCount']
         video["dislikecount"] = details['statistics']['dislikeCount']
         video["favoritecount"] = details['statistics']['favoriteCount']
-        bits_remain, video["comments"], video["commentcount"] = get_comments(bits_remain, video_id)
+        units_remain, video["comments"], video["commentcount"] = get_comments(units_remain, video_id)
         try:
             video["tags"] = details['snippet']['tags']
         except KeyError:
             video["tags"] = []
             print(f"{video_id} did not have any tags.")
 
-        print(f"{video_id} processed. {bits_remain} bits remaining.")
+        print(f"{video_id} processed. {units_remain} units remaining.")
         video_count += 1
         if video_count % 20 == 0:
             print(f"Details retreived from {video_count} videos. {total_videos - video_count} remaining.")
 
     print(f"Process complete. {len(video_entries)} videos processed.")
 
-    return bits_remain, video_entries
+    return units_remain, video_entries
 
 
-def get_comments(bits_remain, video_ID):
+def get_comments(units_remain, video_ID):
     # setup env variables
     PAGE_ID = ""
     LAST_PAGE = False
@@ -118,10 +118,10 @@ def get_comments(bits_remain, video_ID):
 
     # run while last page is false
     while(LAST_PAGE is False):
-        # check remaining bits
-        if bits_remain < 300:
-            input("--Remaining bits less than 300. \n--Press Enter to continue when quota refreshes.")
-            bits_remain = 10000
+        # check remaining units
+        if units_remain < 300:
+            input("--Remaining units less than 300. \n--Press Enter to continue when quota refreshes.")
+            units_remain = 10000
 
         # setup url
         URL = (f'https://www.googleapis.com/youtube/v3/commentThreads?key={API_KEY}&videoId={video_ID}&pageToken={PAGE_ID}&maxResults={num_results}&part=snippet')
@@ -129,7 +129,7 @@ def get_comments(bits_remain, video_ID):
         # get page results
         page = requests.get(URL)
         results = json.loads(page.text)
-        bits_remain -= 1
+        units_remain -= 1
 
         # save comments into list
         for comment in results['items']:
@@ -143,7 +143,7 @@ def get_comments(bits_remain, video_ID):
             # set last page to true
             LAST_PAGE = True
 
-    return bits_remain, all_comments, len(all_comments)
+    return units_remain, all_comments, len(all_comments)
 
 
 def save_csv(data_dump):
