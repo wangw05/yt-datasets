@@ -1,5 +1,4 @@
 # Generating datasets from Youtube
----
 ## Overview
 This tool was built to support a project focusing on analyzing individual youtubers over time based on their content. This project focuses on the data collection process to prepare a dataset for analysis.
 ## Usage
@@ -26,3 +25,4 @@ Dataset will be saved as data_file.csv
 | favoritecount | favoritecount of the video at time of request                |
 | comments      | list of all main-level comments on video, saved in utf8      |
 | commentcount  | count of all main-level comments                             |
+| tags          | tags added by video uploader for video                       |
