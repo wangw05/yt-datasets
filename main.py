@@ -85,7 +85,6 @@ def get_details(bits_remain, video_entries):
 
         details = results['items'][0]
 
-        video["channelid"] = details['snippet']['channelId']
         video["title"] = details['snippet']['title']
         video["desc"] = details['snippet']['description']
         video["live"] = details['snippet']['liveBroadcastContent']
