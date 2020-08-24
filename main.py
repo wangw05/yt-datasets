@@ -2,6 +2,7 @@ import json
 import requests
 import csv
 import config
+import sys
 
 API_KEY = config.API_KEY
 
@@ -15,7 +16,7 @@ def main():
     units_remain, video_entries = get_videos(units_remain, video_entries)
 
     # get indv details
-    units_remain, video_entries = get_details(units_remain, video_entries)
+    # units_remain, video_entries = get_details(units_remain, video_entries)
 
     # save to csv
     save_csv(video_entries)
@@ -43,8 +44,18 @@ def get_videos(units_remain, video_entries):
         results = json.loads(page.text)
         units_remain -= 100
 
+        # check if json is valid
+        try:
+            videos = results['items']
+        except KeyError:
+            print("--Error encountered while processing search result response. \n--Printing last retrieved json...")
+            print(f"URL: {URL}")
+            print(results)
+            print("--Exiting program...")
+            sys.exit(1)
+
         # save videos into list
-        for video in results['items']:
+        for video in videos:
             entry = {
                 'etag': video['etag'],
                 'videoid': video['id']['videoId'],
@@ -75,6 +86,11 @@ def get_details(units_remain, video_entries):
     print("Processing video details...")
 
     for video in video_entries:
+        # check remaining units
+        if units_remain < 300:
+            input("--Remaining units less than 300. \n--Press Enter to continue when quota refreshes.")
+            units_remain = 10000
+
         video_id = video['videoid']
         URL = f"https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id={video_id}&key={API_KEY}"
 
@@ -83,7 +99,17 @@ def get_details(units_remain, video_entries):
         results = json.loads(page.text)
         units_remain -= 1
 
-        details = results['items'][0]
+        # check if json is valid
+        try:
+            details = results['items'][0]
+        except KeyError:
+            print("--Error encountered while processing video detail response. \n--Printing last retrieved json...")
+            print(f"URL: {URL}")
+            print(results)
+            print("--Saving retrieved data to csv...")
+            save_csv(video_entries)
+            print("--Data save complete. Exiting program...")
+            sys.exit(1)
 
         video["title"] = details['snippet']['title']
         video["desc"] = details['snippet']['description']
@@ -92,7 +118,7 @@ def get_details(units_remain, video_entries):
         video["likecount"] = details['statistics']['likeCount']
         video["dislikecount"] = details['statistics']['dislikeCount']
         video["favoritecount"] = details['statistics']['favoriteCount']
-        units_remain, video["comments"], video["commentcount"] = get_comments(units_remain, video_id)
+        units_remain, video["comments"], video["commentcount"], status = get_comments(units_remain, video_id)
         try:
             video["tags"] = details['snippet']['tags']
         except KeyError:
@@ -103,6 +129,12 @@ def get_details(units_remain, video_entries):
         video_count += 1
         if video_count % 20 == 0:
             print(f"Details retreived from {video_count} videos. {total_videos - video_count} remaining.")
+
+        if status is False:
+            print("--Saving retrieved data to csv...")
+            save_csv(video_entries)
+            print("--Data save complete. Exiting program...")
+            sys.exit(1)
 
     print(f"Process complete. {len(video_entries)} videos processed.")
 
@@ -115,14 +147,10 @@ def get_comments(units_remain, video_ID):
     LAST_PAGE = False
     num_results = 100
     all_comments = []
+    status = True
 
     # run while last page is false
     while(LAST_PAGE is False):
-        # check remaining units
-        if units_remain < 300:
-            input("--Remaining units less than 300. \n--Press Enter to continue when quota refreshes.")
-            units_remain = 10000
-
         # setup url
         URL = (f'https://www.googleapis.com/youtube/v3/commentThreads?key={API_KEY}&videoId={video_ID}&pageToken={PAGE_ID}&maxResults={num_results}&part=snippet')
 
@@ -130,6 +158,16 @@ def get_comments(units_remain, video_ID):
         page = requests.get(URL)
         results = json.loads(page.text)
         units_remain -= 1
+
+        # check if json is valid
+        try:
+            "items" in results
+        except KeyError:
+            status = False
+            print("--Error encountered while processing comment response. \n--Printing last retrieved json...")
+            print(f"URL: {URL}")
+            print(results)
+            return units_remain, all_comments, len(all_comments), status
 
         # save comments into list
         for comment in results['items']:
@@ -143,7 +181,7 @@ def get_comments(units_remain, video_ID):
             # set last page to true
             LAST_PAGE = True
 
-    return units_remain, all_comments, len(all_comments)
+    return units_remain, all_comments, len(all_comments), status
 
 
 def save_csv(data_dump):
