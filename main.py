@@ -23,6 +23,19 @@ def main():
 
 
 def get_videos(units_remain, video_entries):
+    """
+    Query Youtube Data API v3 to obtain search results matching in CHANNEL_ID,
+    request returns only video information and excludes playlists and channels.
+
+    Function will pause when it calculates that available quota is under 300.
+
+    Function catches KeyError when processing request,
+    will save current data before exit.
+
+    Requires current units, data structure for storage.
+    Returns remaining units, processed list of videos.
+    """
+
     # setup env variables
     PAGE_ID = ""
     LAST_PAGE = False
@@ -33,7 +46,7 @@ def get_videos(units_remain, video_entries):
     while(LAST_PAGE is False):
         # check remaining units
         if units_remain < 300:
-            input("Remaining units less than 300. \n Press Enter to continue when quota refreshes.")
+            input("Remaining units less than 300.\n Press Enter to continue when quota refreshes.")
             units_remain = 10000
 
         # setup url
@@ -44,11 +57,11 @@ def get_videos(units_remain, video_entries):
         results = json.loads(page.text)
         units_remain -= 100
 
-        # check if json is valid
+        # check if json is valid, causes KeyError if not caught
         try:
             videos = results['items']
         except KeyError:
-            print("--Error encountered while processing search result response. \n--Printing last retrieved json...")
+            print("--Error encountered while processing search result response.\n--Printing last retrieved json...")
             print(f"URL: {URL}")
             print(results)
             print("--Exiting program...")
@@ -80,6 +93,18 @@ def get_videos(units_remain, video_entries):
 
 
 def get_details(units_remain, video_entries):
+    """
+    Takes processed list of videos and queries corresponding video details.
+
+    Function will pause when it calculates that available quota is under 300.
+
+    Function catches KeyError when processing request,
+    will save current data before exit.
+
+    Requires current units, processed list of videos.
+    Returns remaining units, processed list of videos.
+    """
+
     video_count = 0
     total_videos = len(video_entries)
 
@@ -88,7 +113,7 @@ def get_details(units_remain, video_entries):
     for video in video_entries:
         # check remaining units
         if units_remain < 300:
-            input("--Remaining units less than 300. \n--Press Enter to continue when quota refreshes.")
+            input("--Remaining units less than 300.\n--Press Enter to continue when quota refreshes.")
             units_remain = 10000
 
         video_id = video['videoid']
@@ -99,11 +124,11 @@ def get_details(units_remain, video_entries):
         results = json.loads(page.text)
         units_remain -= 1
 
-        # check if json is valid
+        # check if json is valid, causes KeyError if not caught
         try:
             details = results['items'][0]
         except KeyError:
-            print("--Error encountered while processing video detail response. \n--Printing last retrieved json...")
+            print("--Error encountered while processing video detail response.\n--Printing last retrieved json...")
             print(f"URL: {URL}")
             print(results)
             print("--Saving retrieved data to csv...")
@@ -111,10 +136,12 @@ def get_details(units_remain, video_entries):
             print("--Data save complete. Exiting program...")
             sys.exit(1)
 
+        # process video details
         video["title"] = details['snippet']['title']
         video["desc"] = details['snippet']['description']
         video["live"] = details['snippet']['liveBroadcastContent']
         video["viewcount"] = details['statistics']['viewCount']
+        # video like/dislike count may be hidden, causes KeyError if not caught
         try:
             video["likecount"] = details['statistics']['likeCount']
             video["dislikecount"] = details['statistics']['dislikeCount']
@@ -122,18 +149,22 @@ def get_details(units_remain, video_entries):
             video["likecount"] = -1
             video["dislikecount"] = -1
             print(f"{video_id} did not have any like/dislike information found.")
-        units_remain, video["comments"], video["commentcount"], status = get_comments(units_remain, video_id)
+        units_remain, video["comments"], video["commentcount"], status =\
+            get_comments(units_remain, video_id)
+        # tags may be empty, causes KeyError if not caught
         try:
             video["tags"] = details['snippet']['tags']
         except KeyError:
             video["tags"] = []
             print(f"{video_id} did not have any tags.")
 
+        # sanity check to see program is running
         print(f"{video_id} processed. {units_remain} units remaining.")
         video_count += 1
         if video_count % 20 == 0:
             print(f"Details retreived from {video_count} videos. {total_videos - video_count} remaining.")
 
+        # comment processing errored, saving data and exiting
         if status is False:
             print("--Saving retrieved data to csv...")
             save_csv(video_entries)
@@ -146,6 +177,13 @@ def get_details(units_remain, video_entries):
 
 
 def get_comments(units_remain, video_ID):
+    """
+    Based on videoID, query and save comments from a video.
+
+    Requires current units, videoID.
+    Returns remaining units, processed list of comments.
+    """
+
     # setup env variables
     PAGE_ID = ""
     LAST_PAGE = False
@@ -163,19 +201,20 @@ def get_comments(units_remain, video_ID):
         results = json.loads(page.text)
         units_remain -= 1
 
-        # check if json is valid
+        # check if json is valid, causes KeyError if not caught
         try:
             "items" in results
         except KeyError:
             status = False
-            print("--Error encountered while processing comment response. \n--Printing last retrieved json...")
+            print("--Error encountered while processing comment response.\n--Printing last retrieved json...")
             print(f"URL: {URL}")
             print(results)
             return units_remain, all_comments, len(all_comments), status
 
         # save comments into list
         for comment in results['items']:
-            original = comment['snippet']['topLevelComment']['snippet']['textOriginal']
+            toplevel = comment['snippet']['topLevelComment']
+            original = toplevel['snippet']['textOriginal']
             all_comments.append(original)
 
         # handle multipage requests
@@ -189,6 +228,12 @@ def get_comments(units_remain, video_ID):
 
 
 def save_csv(data_dump):
+    """
+    Save processed data to a csv in main directory.
+
+    Requires processed video information.
+    """
+
     data_file = open('data_file.csv', 'w', newline='', encoding='utf8')
     csv_writer = csv.writer(data_file)
 
@@ -200,11 +245,11 @@ def save_csv(data_dump):
             header = video.keys()
             csv_writer.writerow(header)
             first = False
-            print("Headers complete.")
 
         # Writing data of CSV file
         csv_writer.writerow(video.values())
 
+    print("Data write complete.")
     data_file.close()
 
 
