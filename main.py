@@ -122,7 +122,6 @@ def get_details(units_remain, video_entries):
             video["likecount"] = -1
             video["dislikecount"] = -1
             print(f"{video_id} did not have any like/dislike information found.")
-        video["favoritecount"] = details['statistics']['favoriteCount']
         units_remain, video["comments"], video["commentcount"], status = get_comments(units_remain, video_id)
         try:
             video["tags"] = details['snippet']['tags']
