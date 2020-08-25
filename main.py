@@ -16,7 +16,7 @@ def main():
     units_remain, video_entries = get_videos(units_remain, video_entries)
 
     # get indv details
-    # units_remain, video_entries = get_details(units_remain, video_entries)
+    units_remain, video_entries = get_details(units_remain, video_entries)
 
     # save to csv
     save_csv(video_entries)
@@ -115,8 +115,13 @@ def get_details(units_remain, video_entries):
         video["desc"] = details['snippet']['description']
         video["live"] = details['snippet']['liveBroadcastContent']
         video["viewcount"] = details['statistics']['viewCount']
-        video["likecount"] = details['statistics']['likeCount']
-        video["dislikecount"] = details['statistics']['dislikeCount']
+        try:
+            video["likecount"] = details['statistics']['likeCount']
+            video["dislikecount"] = details['statistics']['dislikeCount']
+        except KeyError:
+            video["likecount"] = -1
+            video["dislikecount"] = -1
+            print(f"{video_id} did not have any like/dislike information found.")
         video["favoritecount"] = details['statistics']['favoriteCount']
         units_remain, video["comments"], video["commentcount"], status = get_comments(units_remain, video_id)
         try:
