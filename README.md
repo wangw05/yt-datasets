@@ -1,6 +1,6 @@
 # Generating datasets from Youtube
 ## Overview
-This tool collects video information such as the number of views and video tags by utilizing the [Youtube Data API v3](https://developers.google.com/youtube/v3/). Running this script on a Youtube channel will generate a csv dataset with the listed information below. An example of a dataset created using this tool can be found here.
+This tool collects video information such as the number of views and video tags by utilizing the [Youtube Data API v3](https://developers.google.com/youtube/v3/). Running this script on a Youtube channel will generate a csv dataset with the listed information below. An example of a dataset created using this tool can be found [here](https://github.com/wangw05/bwb-yt-dataset).
 ## Usage
 Run ```pip3 install -r requirements.txt```
 
@@ -21,10 +21,10 @@ Dataset will be saved as ```data_file.csv``` in project folder.
 | publishedtime | publish time of video, in the format of YYYY-MM-DDThh:mm:ssZ |
 | title         | title of the video                                           |
 | desc          | description of the video                                     |
-| live          | whether the video was a live video                           |
+| live          | whether the video is an upcoming livestream, ongoing livestream, or neither                           |
 | viewcount     | viewcount of the video at time of request                    |
 | likecount     | likecount of the video at time of request, -1 indicates no data found                    |
 | dislikecount  | dislikecount of the video at time of request, -1 indicates no data found                 |
 | comments      | list of all main-level comments on video, saved in utf8      |
 | commentcount  | count of all main-level comments                             |
-| tags          | tags added by video uploader for video                       |
+| tags          | list of tags added by video uploader for video                       |
